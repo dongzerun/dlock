@@ -59,15 +59,7 @@ func (dl *DLocker) UnLock(force bool) error {
 }
 
 func NewDLockerWithRedis(hosts []string) (*DLocker, error) {
-	delegater, err := NewRedisDelegater(hosts, DefaultTimeOut)
-	if err != nil {
-		return nil, err
-	}
-
-	dl := &DLocker{
-		Delegater: delegater,
-	}
-	return dl, nil
+	return NewDLockerWithRedisTimeoutMs(hosts, DefaultTimeOut)
 }
 
 func NewDLockerWithRedisTimeoutMs(hosts []string, timeout int) (*DLocker, error) {

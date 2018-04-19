@@ -54,6 +54,30 @@ func Test_LockTwice(t *testing.T) {
 
 }
 
+func Test_LockFailed(t *testing.T) {
+	rand.Seed(time.Now().UnixNano())
+	randKey := strconv.Itoa(rand.Intn(1000000))
+	randValue := strconv.Itoa(rand.Intn(1000000))
+	expire := 1000
+
+	dlock, err := NewDLockerWithRedis([]string{"127.0.0.1:6379"})
+	if err != nil {
+		t.Fatalf("NewDlockerWithRedis err:%v", err)
+	}
+
+	err = dlock.SetKey(randKey).SetToken(randValue).SetDuration(expire).Lock()
+	if err != nil {
+		t.Fatalf("dlock set:%s token:%s duration:%d err:%v", randKey, randValue, expire, err)
+	}
+
+	newValue := randValue + "111"
+	err = dlock.SetToken(newValue).Lock()
+	if err == nil {
+		t.Fatalf("dlock  set:%s token:%s duration:%d success, but expected failed:%v", randKey, randValue, expire, err)
+	}
+
+}
+
 func Test_UnlockEmpty(t *testing.T) {
 	rand.Seed(time.Now().UnixNano())
 	randKey := strconv.Itoa(rand.Intn(1000000))

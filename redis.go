@@ -12,14 +12,14 @@ import (
 var (
 	// get取到key后，检查key是否存在
 	// 1. 不存在，直接设置 key value expire 返回 0
-	// 2. 存在，但是 token 相等说明己经锁过了 返回 1
+	// 2. 存在，但是 token 相等说明己经锁过了 更新ttl 返回 1
 	// 3. 存在，但是 token 不是自己的，抢锁失败 返回 2
 	// 第一个参数是 key, 第二个是 value, 第三个是 expire
-	LuaLock = `"local token=redis.call('get', KEYS[1]) if(token) then if(token == ARGV[1]) then return 1 else return 2 end else redis.call('setex', KEYS[1], ARGV[2], ARGV[1]) return 0 end" 1 %s %s %d`
+	LuaLock = "local token=redis.call('get', KEYS[1]) if(token) then if(token == ARGV[1]) then redis.call('setex', KEYS[1], ARGV[2], ARGV[1]) return 1 else return 2 end else redis.call('setex', KEYS[1], ARGV[2], ARGV[1]) return 0 end"
 	// 解锁同理，不存在返回0，存在是自己的del后返回 1，不是自己的直接返回 2
-	LuaUnLock = `"local token=redis.call('get', KEYS[1]) if(token) then if(token == ARGV[1]) then redis.call('del', KEYS[1]) return 1 else return 2 end else return 0 end" 1 %s %s`
+	LuaUnLock = "local token=redis.call('get', KEYS[1]) if(token) then if(token == ARGV[1]) then redis.call('del', KEYS[1]) return 1 else return 2 end else return 0 end"
 	// 强制解锁，同普通解锁，不过 不是自己的也要 del 后返回 2
-	LuaUnLockForce = `"local token=redis.call('get', KEYS[1]) if(token) then if(token == ARGV[1]) then redis.call('del', KEYS[1]) return 1 else redis.call('del', KEYS[1]) return 2 end else return 0 end" 1 %s %s`
+	LuaUnLockForce = "local token=redis.call('get', KEYS[1]) if(token) then if(token == ARGV[1]) then redis.call('del', KEYS[1]) return 1 else redis.call('del', KEYS[1]) return 2 end else return 0 end"
 )
 
 var (
@@ -116,11 +116,9 @@ func (r *RedisDelegater) LockWithToken(key, value string, duration int) error {
 		return err
 	}
 
-	lua := fmt.Sprintf(LuaLock, key, value, duration)
-
-	ret, err := redis.Int(conn.Do("EVAL", lua))
+	ret, err := redis.Int(conn.Do("EVAL", LuaLock, 1, key, value, duration))
 	if err != nil {
-		return err
+		return fmt.Errorf("%s %v", LuaLock, err)
 	}
 
 	switch ret {
@@ -138,14 +136,12 @@ func (r *RedisDelegater) UnLockWithToken(key, value string, force bool) error {
 		return err
 	}
 
-	var lua string
+	var ret int
 	if force {
-		lua = fmt.Sprintf(LuaUnLockForce, key, value)
+		ret, err = redis.Int(conn.Do("EVAL", LuaUnLockForce, 1, key, value))
 	} else {
-		lua = fmt.Sprintf(LuaUnLock, key, value)
+		ret, err = redis.Int(conn.Do("EVAL", LuaUnLock, 1, key, value))
 	}
-
-	ret, err := redis.Int(conn.Do("EVAL", lua))
 	if err != nil {
 		return err
 	}

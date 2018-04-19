@@ -115,6 +115,7 @@ func (r *RedisDelegater) LockWithToken(key, value string, duration int) error {
 	if err != nil {
 		return err
 	}
+	defer conn.Close()
 
 	ret, err := redis.Int(conn.Do("EVAL", LuaLock, 1, key, value, duration))
 	if err != nil {
@@ -135,6 +136,7 @@ func (r *RedisDelegater) UnLockWithToken(key, value string, force bool) error {
 	if err != nil {
 		return err
 	}
+	defer conn.Close()
 
 	var ret int
 	if force {

@@ -15,7 +15,7 @@ func Test_WriteRedisOK(t *testing.T) {
 	randValue := strconv.Itoa(rand.Intn(1000000))
 	expire := 1000
 
-	d, err := NewRedisDelegater([]string{"127.0.0.1:6379"}, 100)
+	d, err := NewRedisDelegater("testlock", []string{"127.0.0.1:6379"}, 100)
 	if err != nil {
 		t.Fatalf("NewRedisDelegater err:%v", err)
 	}

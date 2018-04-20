@@ -33,7 +33,7 @@ type RedisClient struct {
 	passwd    string
 }
 
-func NewRedisClient(hosts []string, timeout int) (*RedisClient, error) {
+func NewRedisClient(name string, hosts []string, timeout int) (*RedisClient, error) {
 	if len(hosts) == 0 {
 		return nil, ErrHostEmpty
 	}
@@ -42,11 +42,11 @@ func NewRedisClient(hosts []string, timeout int) (*RedisClient, error) {
 	sc.AddHosts(hosts...)
 
 	cj := nodemgr.NewConfigJson()
-	cj.AddService("dlock", sc)
+	cj.AddService(name, sc)
 
 	client := &RedisClient{
 		timeoutMs: timeout,
-		name:      "dlock",
+		name:      name,
 	}
 
 	err := nodemgr.InitWithConfig(cj)
@@ -101,8 +101,8 @@ type RedisDelegater struct {
 	*RedisClient
 }
 
-func NewRedisDelegater(hosts []string, timeout int) (Delegater, error) {
-	r, err := NewRedisClient(hosts, timeout)
+func NewRedisDelegater(name string, hosts []string, timeout int) (Delegater, error) {
+	r, err := NewRedisClient(name, hosts, timeout)
 	if err != nil {
 		return nil, err
 	}

@@ -14,19 +14,19 @@ func Test_LockAndUnlock(t *testing.T) {
 	randValue := strconv.Itoa(rand.Intn(1000000))
 	expire := 1000
 
-	dlock, err := NewDLockerWithRedis([]string{"127.0.0.1:6379"})
+	dlock, err := NewDLockerWithRedis("testlock", []string{"127.0.0.1:6379"})
 	if err != nil {
 		t.Fatalf("NewDlockerWithRedis err:%v", err)
 	}
 
-	err = dlock.SetKey(randKey).SetToken(randValue).SetDuration(expire).Lock()
+	err = dlock.Lock(randKey, randValue, expire)
 	if err != nil {
 		t.Fatalf("dlock set:%s token:%s duration:%d err:%v", randKey, randValue, expire, err)
 	}
 
-	err = dlock.UnLock(false)
+	err = dlock.UnLock(randKey, randValue, false)
 	if err != nil {
-		t.Fatalf("dlock unlock:%s token:%s err:%v", dlock.key, dlock.token, err)
+		t.Fatalf("dlock unlock:%s token:%s err:%v", randKey, randValue, err)
 	}
 }
 
@@ -37,17 +37,17 @@ func Test_LockTwice(t *testing.T) {
 	randValue := strconv.Itoa(rand.Intn(1000000))
 	expire := 1000
 
-	dlock, err := NewDLockerWithRedis([]string{"127.0.0.1:6379"})
+	dlock, err := NewDLockerWithRedis("testlock", []string{"127.0.0.1:6379"})
 	if err != nil {
 		t.Fatalf("NewDlockerWithRedis err:%v", err)
 	}
 
-	err = dlock.SetKey(randKey).SetToken(randValue).SetDuration(expire).Lock()
+	err = dlock.Lock(randKey, randValue, expire)
 	if err != nil {
 		t.Fatalf("dlock set:%s token:%s duration:%d err:%v", randKey, randValue, expire, err)
 	}
 
-	err = dlock.Lock()
+	err = dlock.Lock(randKey, randValue, expire)
 	if err != nil {
 		t.Fatalf("dlock twice set:%s token:%s duration:%d err:%v", randKey, randValue, expire, err)
 	}
@@ -60,18 +60,18 @@ func Test_LockFailed(t *testing.T) {
 	randValue := strconv.Itoa(rand.Intn(1000000))
 	expire := 1000
 
-	dlock, err := NewDLockerWithRedis([]string{"127.0.0.1:6379"})
+	dlock, err := NewDLockerWithRedis("testlock", []string{"127.0.0.1:6379"})
 	if err != nil {
 		t.Fatalf("NewDlockerWithRedis err:%v", err)
 	}
 
-	err = dlock.SetKey(randKey).SetToken(randValue).SetDuration(expire).Lock()
+	err = dlock.Lock(randKey, randValue, expire)
 	if err != nil {
 		t.Fatalf("dlock set:%s token:%s duration:%d err:%v", randKey, randValue, expire, err)
 	}
 
 	newValue := randValue + "111"
-	err = dlock.SetToken(newValue).Lock()
+	err = dlock.Lock(randKey, newValue, expire)
 	if err == nil {
 		t.Fatalf("dlock  set:%s token:%s duration:%d success, but expected failed:%v", randKey, randValue, expire, err)
 	}
@@ -83,14 +83,14 @@ func Test_UnlockEmpty(t *testing.T) {
 	randKey := strconv.Itoa(rand.Intn(1000000))
 	randValue := strconv.Itoa(rand.Intn(1000000))
 
-	dlock, err := NewDLockerWithRedis([]string{"127.0.0.1:6379"})
+	dlock, err := NewDLockerWithRedis("testlock", []string{"127.0.0.1:6379"})
 	if err != nil {
 		t.Fatalf("NewDlockerWithRedis err:%v", err)
 	}
 
-	err = dlock.SetKey(randKey).SetToken(randValue).UnLock(false)
+	err = dlock.UnLock(randKey, randValue, false)
 	if err != nil {
-		t.Fatalf("dlock unlock:%s token:%s err:%v", dlock.key, dlock.token, err)
+		t.Fatalf("dlock unlock:%s token:%s err:%v", randKey, randValue, err)
 	}
 }
 
@@ -101,23 +101,23 @@ func Test_UnLockOther(t *testing.T) {
 	otherValue := strconv.Itoa(rand.Intn(1000000))
 	expire := 1000
 
-	dlock, err := NewDLockerWithRedis([]string{"127.0.0.1:6379"})
+	dlock, err := NewDLockerWithRedis("testlock", []string{"127.0.0.1:6379"})
 	if err != nil {
 		t.Fatalf("NewDlockerWithRedis err:%v", err)
 	}
 
-	err = dlock.SetKey(randKey).SetToken(randValue).SetDuration(expire).Lock()
+	err = dlock.Lock(randKey, randValue, expire)
 	if err != nil {
 		t.Fatalf("dlock set:%s token:%s duration:%d err:%v", randKey, randValue, expire, err)
 	}
 
-	err = dlock.SetToken(otherValue).UnLock(false)
+	err = dlock.UnLock(randKey, otherValue, false)
 	if err == nil {
-		t.Fatalf("dlock unlock:%s token:%s %v success, expected failed", dlock.key, dlock.token, err)
+		t.Fatalf("dlock unlock:%s token:%s %v success, expected failed", randKey, otherValue, err)
 	}
 
-	err = dlock.SetToken(otherValue).UnLock(true)
+	err = dlock.UnLock(randKey, otherValue, true)
 	if err != nil {
-		t.Fatalf("dlock force unlock:%s token:%s err:%v", dlock.key, dlock.token, err)
+		t.Fatalf("dlock force unlock:%s token:%s err:%v", randKey, otherValue, err)
 	}
 }

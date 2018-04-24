@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/dongzerun/nodemgr"
 	"github.com/garyburd/redigo/redis"
 )
 
@@ -46,5 +47,27 @@ func Test_WriteRedisOK(t *testing.T) {
 
 	if ttl != expire {
 		t.Fatalf("redis ttl get %d, but expected %d", ttl, expire)
+	}
+}
+
+func Test_RedisClient(t *testing.T) {
+	_, err := NewRedisClient("testredis", []string{"127.0.0.1:6379"}, 100)
+	if err != nil {
+		t.Fatal("redis init fatal %v", err)
+	}
+
+	_, err = NewRedisClient("testredis1", []string{"127.0.0.1:6379"}, 100)
+	if err != nil {
+		t.Fatal("redis init fatal %v", err)
+	}
+
+	_, err = NewRedisClient("testredis1", []string{"127.0.0.1:6379"}, 100)
+	if err != nil {
+		t.Fatal("redis init fatal %v", err)
+	}
+
+	_, err = nodemgr.GetAllNodes("testredis")
+	if err != nil {
+		t.Fatal("GetAllNodes fatal %v", err)
 	}
 }
